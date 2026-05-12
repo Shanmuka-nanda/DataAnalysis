@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Create Project{% endblock %}
+
+{% block content %}
+
+<style>
+.form-container {
+    max-width:600px;
+    background:#111827;
+    padding:2rem;
+    border-radius:1rem;
+}
+
+.form-group {
+    margin-bottom:1.2rem;
+}
+
+input, textarea, select {
+    width:100%;
+    padding:0.6rem;
+    border-radius:0.6rem;
+    border:none;
+    background:#1f2937;
+    color:white;
+}
+
+.submit-btn {
+    background:#7c3aed;
+    padding:0.6rem 1.5rem;
+    border:none;
+    border-radius:0.6rem;
+    color:white;
+    cursor:pointer;
+}
+</style>
+
+<h2>Create New Project</h2>
+
+<div class="form-container">
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="submit-btn">Analyze & Save Project</button>
+    </form>
+</div>
+
+{% endblock %}

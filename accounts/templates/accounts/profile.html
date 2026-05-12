@@ -1,0 +1,499 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Profile{% endblock %}
+
+{% block content %}
+
+<style>
+    /* Profile Page Specific Styles inherited from global vars */
+    .profile-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        padding-top: 20px;
+        max-width: 1200px;
+    }
+
+    .profile-card {
+        background: var(--bg-card);
+        border-radius: 24px;
+        padding: 32px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+
+    .profile-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+
+    .profile-info {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+    }
+
+    .profile-img-container {
+        position: relative;
+    }
+
+    .profile-info img {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid #fff;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .profile-details h2 {
+        margin: 0 0 4px 0;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .profile-details p {
+        margin: 4px 0;
+        color: var(--text-muted);
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .form-section {
+        margin-top: 32px;
+        background: white;
+        padding: 32px;
+        border-radius: 24px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.02);
+    }
+    
+    .form-section h3 {
+        margin-top: 0;
+        margin-bottom: 24px;
+        color: var(--text-primary);
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .modern-form .form-group {
+        margin-bottom: 20px;
+    }
+
+    .modern-form input,
+    .modern-form textarea,
+    .modern-form select {
+        width: 100%;
+        padding: 14px 18px;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+
+    .modern-form input:focus,
+    .modern-form textarea:focus {
+        outline: none;
+        border-color: #6500ff;
+        background: white;
+        box-shadow: 0 0 0 4px rgba(101, 0, 255, 0.1);
+    }
+    
+    .modern-form label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    /* Category icon badge used in the company/category selector */
+    .category-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: #eef2ff;
+        color: #4f46e5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+
+    .activity-section {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+        .activity-section {
+            grid-template-columns: 1fr;
+        }
+        .profile-top {
+            flex-direction: column;
+            gap: 20px;
+        }
+    }
+
+    .activity-form-card {
+        background: var(--bg-card);
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+
+    .activity-list-card {
+        background: var(--bg-card);
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+
+    .activity-list-card h3, .activity-form-card h3 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        color: var(--text-primary);
+        font-size: 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .activity-item {
+        padding: 16px;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        transition: transform 0.2s, background 0.2s;
+        cursor: pointer;
+    }
+
+    .activity-item:hover {
+        background: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    }
+
+    .activity-title {
+        font-weight: 700;
+        color: var(--text-primary);
+        font-size: 15px;
+    }
+
+    .activity-desc {
+        color: var(--text-muted);
+        font-size: 14px;
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    .activity-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 4px;
+        font-size: 12px;
+        color: #8f9bba;
+    }
+</style>
+
+<!-- Header -->
+<div class="dash-header" style="margin-bottom: 0px;">
+    <h1>Profile Settings</h1>
+</div>
+
+<div class="profile-wrapper">
+
+    <!-- PROFILE DISPLAY -->
+    <div class="profile-card">
+        <div class="profile-top">
+
+            <div class="profile-info">
+                <div class="profile-img-container">
+                    {% if request.user.profile.image and request.user.profile.image.url %}
+                    <img src="{{ request.user.profile.image.url }}" onerror="this.onerror=null;this.src='/media/profiles/default-profile.svg';" alt="Profile image">
+                    {% else %}
+                    <img src="/media/profiles/default-profile.svg" alt="Default profile">
+                    {% endif %}
+                </div>
+
+                <div class="profile-details">
+                    <h2>{{ request.user.username }}</h2>
+                    <p><i class="fa-regular fa-envelope"></i> {{ request.user.email }}</p>
+                    <p><i class="fa-regular fa-id-badge"></i> {{ request.user.profile.bio|default:"No bio provided yet." }}</p>
+                    <p><i class="fa-solid fa-building"></i> {{ company.name|default:"No company selected" }}</p>
+                    <p><i class="fa-solid fa-layer-group"></i> Category Mode: {{ company.primary_goal|default:"General" }}</p>
+                </div>
+            </div>
+
+            <button class="btn-dark" onclick="toggleEditForm()" style="cursor: pointer;"><i class="fa-solid fa-pen" style="margin-right: 8px;"></i> Edit</button>
+
+        </div>
+
+        <!-- EDIT PROFILE FORM -->
+        <div class="form-section animate-slide-up" id="edit-profile-form" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h3 style="margin: 0;"><i class="fa-solid fa-user-pen" style="color: #6500ff;"></i> Update Profile Information</h3>
+                <button type="button" onclick="toggleEditForm()" style="background: transparent; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-times"></i></button>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data" class="modern-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>Biography</label>
+                    <div style="position: relative;">
+                        <i class="fa-regular fa-comment" style="position: absolute; left: 16px; top: 16px; color: #8f9bba;"></i>
+                        <textarea name="bio" placeholder="Tell us about yourself..." style="padding-left: 44px; min-height: 100px;">{{ profile_form.bio.value|default:"" }}</textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Profile Picture</label>
+                    <div style="position: relative; background: #f8fafc; border: 2px dashed #e2e8f0; border-radius: 14px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#6500ff'; this.style.background='rgba(101,0,255,0.02)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.background='#f8fafc';">
+                        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 28px; color: #8f9bba; margin-bottom: 12px; display: block;"></i>
+                        <div style="font-size: 14px; color: var(--text-primary); font-weight: 600;">Click here to upload a new profile picture</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Supported formats: PNG, JPG, GIF up to 5MB</div>
+                        <input type="file" name="image" style="opacity: 0; position: absolute; left: 0; top: 0; right: 0; bottom: 0; width: 100%; height: 100%; cursor: pointer;">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 16px; margin-top: 32px;">
+                    <button type="submit" name="profile_submit" class="btn-dark" style="flex: 2; justify-content: center; padding: 14px; font-size: 15px; border-radius: 14px;">
+                        <i class="fa-solid fa-check" style="margin-right: 8px;"></i> Save Changes
+                    </button>
+                    <button type="button" class="btn-secondary" style="flex: 1; justify-content: center; background: #f1f5f9; color: var(--text-primary); border: none; padding: 14px; font-size: 15px; border-radius: 14px; cursor: pointer;" onclick="toggleEditForm()">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- COMPANY / CATEGORY SETTINGS -->
+    <div class="activity-form-card" style="box-shadow: 0 4px 24px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.02);">
+        <div style="text-align: center; margin-bottom: 24px;">
+            <div style="background: linear-gradient(135deg, rgba(79,70,229,0.18), rgba(14,165,233,0.18)); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; border: 1px solid rgba(99,102,241,0.25);">
+                <i class="fa-solid fa-book-open-reader" style="color: #4f46e5; font-size: 23px;"></i>
+            </div>
+            <h3 style="margin: 0; justify-content: center;">Workspace Category Settings</h3>
+            <p style="color: var(--text-muted); font-size: 13px; margin: 8px 0 0 0;">Change this anytime after login. Analytics and recommendations will follow your selected category.</p>
+        </div>
+
+        <form method="POST" class="modern-form">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label>Company Name</label>
+                <input type="text" name="company_name" required value="{{ company.name|default:'' }}" placeholder="Your company name">
+            </div>
+
+            <div class="form-group">
+                <label>Industry</label>
+                <input type="text" name="industry" value="{{ company.industry|default:'' }}" placeholder="Technology, Sales, Healthcare...">
+            </div>
+
+            <div class="form-group">
+                <label>Category Mode</label>
+                <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+                    <label style="cursor:pointer;">
+                        <input type="radio" name="primary_goal" value="Recruitment" {% if not company or company.primary_goal == 'Recruitment' %}checked{% endif %} style="display:none;">
+                        <div class="category-card" style="border:1px solid #e2e8f0; border-radius:12px; padding:12px; background:#f8fafc; display:flex; gap:10px; align-items:center;">
+                            <div class="category-icon"><i class="fa-solid fa-users"></i></div>
+                            <div>
+                                <div style="font-weight:700; font-size:13px; color:#1f2937;">Recruitment</div>
+                                <div style="font-size:11px; color:#64748b;">Hiring insights</div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label style="cursor:pointer;">
+                        <input type="radio" name="primary_goal" value="Company Growth" {% if company and company.primary_goal == 'Company Growth' %}checked{% endif %} style="display:none;">
+                        <div class="category-card" style="border:1px solid #e2e8f0; border-radius:12px; padding:12px; background:#f8fafc; display:flex; gap:10px; align-items:center;">
+                            <div class="category-icon"><i class="fa-solid fa-building"></i></div>
+                            <div>
+                                <div style="font-weight:700; font-size:13px; color:#1f2937;">Company Growth</div>
+                                <div style="font-size:11px; color:#64748b;">Growth KPIs</div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label style="cursor:pointer;">
+                        <input type="radio" name="primary_goal" value="Sales" {% if company and company.primary_goal == 'Sales' %}checked{% endif %} style="display:none;">
+                        <div class="category-card" style="border:1px solid #e2e8f0; border-radius:12px; padding:12px; background:#f8fafc; display:flex; gap:10px; align-items:center;">
+                            <div class="category-icon"><i class="fa-solid fa-chart-line"></i></div>
+                            <div>
+                                <div style="font-weight:700; font-size:13px; color:#1f2937;">Sales</div>
+                                <div style="font-size:11px; color:#64748b;">Revenue analytics</div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label style="cursor:pointer;">
+                        <input type="radio" name="primary_goal" value="General" {% if company and company.primary_goal == 'General' %}checked{% endif %} style="display:none;">
+                        <div class="category-card" style="border:1px solid #e2e8f0; border-radius:12px; padding:12px; background:#f8fafc; display:flex; gap:10px; align-items:center;">
+                            <div class="category-icon"><i class="fa-solid fa-database"></i></div>
+                            <div>
+                                <div style="font-weight:700; font-size:13px; color:#1f2937;">General</div>
+                                <div style="font-size:11px; color:#64748b;">Any dataset</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" name="company_submit" class="btn-dark" style="width: 100%; margin-top: 12px; justify-content: center; padding: 14px; font-size: 15px; border-radius: 14px;">
+                <i class="fa-solid fa-floppy-disk" style="margin-right: 8px;"></i> Save Category Settings
+            </button>
+        </form>
+    </div>
+
+    <!-- ACTIVITY SECTION -->
+    <div class="activity-section">
+        
+        <!-- Add Activity Form -->
+        <div class="activity-form-card" style="box-shadow: 0 4px 24px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.02);">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <img
+                    src="{{ request.user.profile.image.url }}"
+                    onerror="this.onerror=null;this.src='/media/profiles/default-profile.svg';"
+                    alt="Profile"
+                    style="width: 64px; height: 64px; border-radius: 9999px; object-fit: cover; margin: 0 auto 16px auto; border: 2px solid #e2e8f0;"
+                >
+                <h3 style="margin: 0; justify-content: center;">Log New Activity</h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin: 8px 0 0 0;">Keep track of your project tasks</p>
+            </div>
+            
+            <form method="POST" class="modern-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>Task Title</label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-heading" style="position: absolute; left: 16px; top: 16px; color: #8f9bba;"></i>
+                        <input type="text" name="title" placeholder="e.g., Database Migration" required style="padding-left: 44px; margin-bottom: 0;">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Details</label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-align-left" style="position: absolute; left: 16px; top: 16px; color: #8f9bba;"></i>
+                        <textarea name="description" placeholder="Briefly describe what was done..." required style="padding-left: 44px; min-height: 80px; margin-bottom: 0;"></textarea>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Due/Completion Date</label>
+                    <div style="position: relative;">
+                        <i class="fa-regular fa-calendar" style="position: absolute; left: 16px; top: 16px; color: #8f9bba; z-index: 1;"></i>
+                        <input type="date" name="date" required style="padding-left: 44px; margin-bottom: 0;">
+                    </div>
+                </div>
+                
+                <button type="submit" name="activity_submit" class="btn-dark" style="width: 100%; margin-top: 16px; justify-content: center; padding: 14px; font-size: 15px; border-radius: 14px;">
+                    <i class="fa-solid fa-plus" style="margin-right: 8px;"></i> Add Activity
+                </button>
+            </form>
+        </div>
+
+        <!-- Activity List -->
+        <div class="activity-list-card">
+            <h3>Recent Activities <i class="fa-solid fa-ellipsis" style="color:#8f9bba;"></i></h3>
+
+            {% if activities %}
+                <div style="max-height: 500px; overflow-y: auto; padding-right: 8px;">
+                    {% for activity in activities %}
+                    <div class="activity-item">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <img
+                                src="{{ request.user.profile.image.url }}"
+                                onerror="this.onerror=null;this.src='/media/profiles/default-profile.svg';"
+                                alt="Profile"
+                                style="width: 28px; height: 28px; border-radius: 9999px; object-fit: cover; border: 1px solid #e2e8f0;"
+                            >
+                            <div class="activity-title">{{ activity.title }}</div>
+                        </div>
+                        <p class="activity-desc">{{ activity.description }}</p>
+                        <div class="activity-meta">
+                            <span><i class="fa-regular fa-calendar" style="margin-right: 4px;"></i> {{ activity.date }}</span>
+                            <span><i class="fa-solid fa-circle-check" style="color:#10b981; margin-right:4px;"></i> Completed</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                    <div style="font-size: 40px; margin-bottom: 16px; color: #cbd5e1;"><i class="fa-regular fa-clipboard"></i></div>
+                    <p>No activities added yet. Start by logging your first task.</p>
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    function toggleEditForm() {
+        const form = document.getElementById('edit-profile-form');
+        if (form.style.display === 'none' || form.style.display === '') {
+            form.style.display = 'block';
+            // Smooth scroll if needed
+            form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            form.style.display = 'none';
+        }
+    }
+    
+    // Auto-style django forms
+    document.addEventListener("DOMContentLoaded", function() {
+        const textareas = document.querySelectorAll('.modern-form textarea');
+        textareas.forEach(ta => {
+            ta.style.height = '100px';
+            ta.style.resize = 'vertical';
+        });
+
+        const categoryRadios = document.querySelectorAll('input[name="primary_goal"]');
+        const repaintCategoryCards = () => {
+            categoryRadios.forEach(r => {
+                const card = r.closest('label')?.querySelector('.category-card');
+                if (!card) return;
+                if (r.checked) {
+                    card.style.borderColor = '#6366f1';
+                    card.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.14)';
+                    card.style.background = '#eef2ff';
+                } else {
+                    card.style.borderColor = '#e2e8f0';
+                    card.style.boxShadow = 'none';
+                    card.style.background = '#f8fafc';
+                }
+            });
+        };
+
+        categoryRadios.forEach(r => r.addEventListener('change', repaintCategoryCards));
+        repaintCategoryCards();
+
+        // Some rudimentary styling for date pickers/inputs if any
+        const inputs = document.querySelectorAll('.modern-form input');
+        inputs.forEach(inp => {
+            if(inp.type === 'file') {
+                inp.style.border = 'none';
+                inp.style.padding = '0';
+                inp.style.background = 'transparent';
+            }
+        });
+    });
+</script>
+
+{% endblock %}

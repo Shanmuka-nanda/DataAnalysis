@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Project Details{% endblock %}
+
+{% block content %}
+
+<style>
+    .detail-card {
+        background: #111827;
+        padding: 2rem;
+        border-radius: 1rem;
+        max-width: 800px;
+    }
+
+    .actions {
+        margin-top: 1.5rem;
+    }
+
+    .actions a {
+        margin-right: 1rem;
+        color: #7c3aed;
+    }
+</style>
+
+<div class="detail-card">
+    <h2>{{ project.title }}</h2>
+    <p><strong>Status:</strong> {{ project.status }}</p>
+    <p>{{ project.description }}</p>
+
+    <div class="actions">
+        <a href="{% url 'project_delete' project.id %}">Delete</a>
+    </div>
+</div>
+
+{% endblock %}

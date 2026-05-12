@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | DataAnalysis{% endblock %}
+{% block header_title %}Overview Dashboard{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-6">
+
+    <!-- KPI Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        <!-- Card 1 -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500 mb-1">Activities ({{ period_label }})</h3>
+                    <p class="text-3xl font-bold text-gray-800">{{ total_activities }}</p>
+                </div>
+                <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm">
+                <span class="{% if activities_change >= 0 %}text-green-500{% else %}text-red-500{% endif %} font-medium flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                    {{ activities_change }}%
+                </span>
+                <span class="text-gray-400 ml-2">vs previous {{ period_label|lower }}</span>
+            </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500 mb-1">Projects Created ({{ period_label }})</h3>
+                    <p class="text-3xl font-bold text-gray-800">{{ total_projects }}</p>
+                </div>
+                <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm">
+                <span class="{% if projects_change >= 0 %}text-green-500{% else %}text-red-500{% endif %} font-medium flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                    {{ projects_change }}%
+                </span>
+                <span class="text-gray-400 ml-2">vs previous {{ period_label|lower }}</span>
+            </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500 mb-1">Workspace Members</h3>
+                    <p class="text-3xl font-bold text-gray-800">{{ active_users }}</p>
+                </div>
+                <div class="p-2 bg-green-50 text-green-600 rounded-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm">
+                <span class="text-gray-500 font-medium flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14"></path></svg>
+                    Team size
+                </span>
+                <span class="text-gray-400 ml-2">in current workspace</span>
+            </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500 mb-1">Avg. Activities / Day</h3>
+                    <p class="text-3xl font-bold text-gray-800">{{ avg_processing_time }}</p>
+                </div>
+                <div class="p-2 bg-orange-50 text-orange-600 rounded-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm">
+                <span class="{% if processing_change >= 0 %}text-green-500{% else %}text-red-500{% endif %} font-medium flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                    {{ processing_change }}%
+                </span>
+                <span class="text-gray-400 ml-2">vs previous {{ period_label|lower }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <!-- Main Line Chart -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 xl:col-span-2">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800">Activity Trend</h3>
+                <form method="get">
+                    <select name="period" onchange="this.form.submit()" class="text-sm text-gray-600 hover:text-indigo-600 px-3 py-1 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="day" {% if period == 'day' %}selected{% endif %}>Today</option>
+                        <option value="week" {% if period == 'week' %}selected{% endif %}>This Week</option>
+                        <option value="month" {% if period == 'month' %}selected{% endif %}>This Month</option>
+                    </select>
+                </form>
+            </div>
+            <div class="w-full relative chart-container" style="min-height:300px;">
+                {{ chart_trend|safe }}
+            </div>
+        </div>
+
+        <!-- Secondary Chart -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 xl:col-span-1">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800">Project Distribution</h3>
+            </div>
+            <div class="w-full relative chart-container" style="min-height:300px;">
+                {{ chart_dist|safe }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table Row -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-800">Recent Projects</h3>
+            <a href="{% url 'projects:project_list' %}" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">View All →</a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-500 text-sm font-semibold uppercase tracking-wider">
+                        <th class="px-6 py-4">Project Name</th>
+                        <th class="px-6 py-4">Status</th>
+                        <th class="px-6 py-4">Date Created</th>
+                        <th class="px-6 py-4">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for p in recent_projects %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+                                    {{ p.name|make_list|first|upper }}
+                                </div>
+                                <span class="font-medium text-gray-800">{{ p.name }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">Active</span>
+                        </td>
+                        <td class="px-6 py-4 text-gray-500 text-sm">
+                            {{ p.created_at|date:"M d, Y" }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <a href="{% url 'projects:project_detail' p.pk %}" class="text-indigo-600 hover:text-indigo-900 font-medium text-sm">Analyze</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                            No projects found. <a href="{% url 'projects:project_create' %}" class="text-indigo-600 hover:underline">Upload a new dataset</a> to get started.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    /* Make plotly charts respnsive */
+    .js-plotly-plot, .plot-container {
+        width: 100% !important;
+    }
+</style>
+{% endblock %}

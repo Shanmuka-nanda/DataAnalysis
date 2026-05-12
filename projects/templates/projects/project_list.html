@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Projects - DataAnalysis{% endblock %}
+{% block header_title %}Dataset Library & Projects{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <h2 class="text-2xl font-bold text-gray-800">Projects</h2>
+        <p class="text-sm text-gray-500">Manage all your data projects and sources.</p>
+    </div>
+    <a href="{% url 'projects:project_create' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        New Project
+    </a>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    {% for project in projects %}
+    <a href="{% url 'projects:project_detail' project.pk %}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md hover:border-indigo-300 transition-all flex flex-col group">
+        <div class="flex justify-between items-start mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                    {{ project.name|make_list|first|upper }}
+                </div>
+                <div>
+                    <h3 class="font-bold text-gray-800 text-lg truncate w-32" title="{{ project.name }}">{{ project.name }}</h3>
+                    <p class="text-xs text-gray-500 uppercase">{{ project.file_type|default:'csv' }} Data</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-auto">
+            <div class="flex justify-between items-end border-t border-gray-50 pt-4">
+                <div>
+                    <span class="text-xs text-gray-500">Resource</span>
+                    <strong class="block text-gray-800 text-lg">{{ project.total_rows|default:150 }} <span class="text-sm font-normal text-gray-500">Entries</span></strong>
+                </div>
+                <div class="text-indigo-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                    Analyze →
+                </div>
+            </div>
+        </div>
+    </a>
+    {% empty %}
+    <div class="col-span-full bg-white border border-dashed border-gray-300 rounded-xl p-12 flex flex-col items-center justify-center text-center">
+        <div class="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800 mb-2">No projects found.</h3>
+        <p class="text-sm text-gray-500 max-w-md mb-6">Create a new project and upload your CSV or Excel data to get started with auto analytics.</p>
+        <a href="{% url 'projects:project_create' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg text-sm font-medium flex items-center gap-2">
+            Upload Data
+        </a>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Storage Info -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col lg:flex-row justify-between items-center gap-6">
+    <div>
+        <h3 class="text-lg font-bold text-gray-800 mb-2">Storage Overview</h3>
+        <p class="text-sm text-gray-500">Total capacity used</p>
+    </div>
+    <div class="flex-1 max-w-2xl px-8 w-full border-x border-gray-100">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-sm font-bold text-gray-800">{{ used_storage|default:"0.0" }} MB Used</span>
+            <span class="text-sm text-gray-500">200 MB Limit</span>
+        </div>
+        <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+            <div class="bg-indigo-500 h-3 rounded-full" style="width: {% if used_storage %}{{ used_storage|add:0 }}{% else %}0{% endif %}%;"></div>
+        </div>
+    </div>
+    <div class="flex gap-4 items-center">
+         {% if used_storage > 200.0 %}
+             <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold">Exceeded</span>
+         {% else %}
+             <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">Safe Status</span>
+         {% endif %}
+    </div>
+</div>
+
+{% endblock %}

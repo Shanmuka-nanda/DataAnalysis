@@ -1,0 +1,745 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ project.name }} | Data Analysis{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Premium Dark Theme Dashboard Aesthetics */
+    .dashboard-container {
+        padding: 1rem;
+        background-color: var(--bg-main);
+        min-height: calc(100vh - 80px);
+        /* Adjust based on your header/nav */
+    }
+
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        background: linear-gradient(90deg, #1f2937 0%, rgba(31, 41, 55, 0.4) 100%);
+        padding: 1.5rem 2rem;
+        border-radius: 1rem;
+        border-left: 5px solid var(--accent-primary);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    }
+
+    .dashboard-header h2 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: #f8fafc;
+    }
+
+    .dashboard-header .subtitle {
+        color: #94a3b8;
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+    }
+
+    .dashboard-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .action-btn {
+        background: #7c3aed;
+        /* var(--accent-primary) */
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        display: inline-block;
+        font-weight: 500;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 15px rgba(124, 58, 237, 0.3);
+    }
+
+    .action-btn:hover {
+        background: #6d28d9;
+        transform: translateY(-2px);
+        box-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+    }
+
+    .action-btn.delete {
+        background: transparent;
+        border: 1px solid #ef4444;
+        color: #ef4444;
+        box-shadow: none;
+    }
+
+    .action-btn.delete:hover {
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    /* Main Dashboard Grid layout corresponding to the mockup */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 3fr 1fr;
+        grid-template-rows: auto auto auto;
+        gap: 1.5rem;
+        grid-template-areas:
+            "kpi1 kpi2"
+            "main-chart side-chart1"
+            "main-chart side-chart2";
+    }
+
+    /* Adjust for smaller screens */
+    @media (max-width: 1200px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+            grid-template-areas:
+                "kpi1"
+                "kpi2"
+                "main-chart"
+                "side-chart1"
+                "side-chart2";
+        }
+    }
+
+    .glass-panel {
+        background: #111827;
+        /* Dark grayish blue */
+        border-radius: 1rem;
+        padding: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Glowing accent line at top of cards */
+    .glass-panel::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, var(--accent-primary), transparent);
+        opacity: 0.5;
+    }
+
+    .panel-title {
+        font-size: 1.1rem;
+        color: #e2e8f0;
+        margin-bottom: 1rem;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .area-kpi1 {
+        grid-area: kpi1;
+        display: flex;
+        gap: 1.5rem;
+    }
+
+    .area-kpi2 {
+        grid-area: kpi2;
+    }
+
+    .area-main-chart {
+        grid-area: main-chart;
+        min-height: 400px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .area-side-chart1 {
+        grid-area: side-chart1;
+        min-height: 250px;
+    }
+
+    .area-side-chart2 {
+        grid-area: side-chart2;
+        min-height: 250px;
+    }
+
+    .chart-container-fill {
+        flex: 1;
+        position: relative;
+        min-height: 0;
+        width: 100%;
+    }
+
+    /* Mini KPI Cards */
+    .mini-kpi {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        transition: transform 0.2s;
+    }
+
+    .mini-kpi:hover {
+        transform: translateY(-3px);
+        border-color: rgba(124, 58, 237, 0.3);
+    }
+
+    .kpi-label {
+        font-size: 0.85rem;
+        color: #94a3b8;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .kpi-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #10b981;
+        /* Default success green */
+    }
+
+    .kpi-value.neutral {
+        color: #f8fafc;
+    }
+
+    .kpi-value.accent {
+        color: #7c3aed;
+    }
+
+    /* Control Selects */
+    .control-select {
+        background: #1f2937;
+        color: #f8fafc;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.9rem;
+        outline: none;
+        appearance: none;
+        cursor: pointer;
+        min-width: 120px;
+    }
+
+    .control-select:focus {
+        border-color: #7c3aed;
+    }
+
+    #loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.8);
+        backdrop-filter: blur(4px);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 50;
+        border-radius: inherit;
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(124, 58, 237, 0.2);
+        border-left-color: #7c3aed;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container" id="dashboard-root">
+
+    <div class="dashboard-header">
+        <div>
+            <h2>{{ project.name }}</h2>
+            <div class="subtitle">Market Overview Dashboard • Size: {{ project.dataset_size|filesizeformat }}</div>
+        </div>
+        <div class="dashboard-actions">
+            <a href="{% url 'analytics:index' %}?project_id={{ project.id }}" class="action-btn">
+                <i class="fa-solid fa-chart-line"></i> Open in Analytics
+            </a>
+            <a href="{% url 'Report_build:index' %}?project_id={{ project.id }}" class="action-btn">
+                <i class="fa-solid fa-chart-bar"></i> Build Report
+            </a>
+            <a href="{% url 'Data_clean:index' %}?project_id={{ project.id }}" class="action-btn">
+                <i class="fa-solid fa-broom"></i> Clean Dataset
+            </a>
+            <form action="{% url 'projects:project_delete' project.pk %}" method="POST" style="margin:0;">
+                {% csrf_token %}
+                <button type="submit" class="action-btn delete"
+                    onclick="return confirm('Are you sure you want to delete this project?');">
+                    <i class="fa-solid fa-trash"></i> Delete
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- We inject the dataset URL here so JS can fetch it -->
+    {% if project.dataset %}
+    <input type="hidden" id="dataset-url" value="{{ project.dataset.url }}">
+    {% else %}
+    <input type="hidden" id="dataset-url" value="">
+    {% endif %}
+
+    <div class="glass-panel" id="loading-panel" style="min-height: 400px;">
+        <div id="loading-overlay">
+            <div class="spinner"></div>
+            <div style="color: #94a3b8;">Processing dataset and building dashboard...</div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid" id="main-dashboard" style="display: none;">
+
+        <!-- Top KPIs panel -->
+        <div class="glass-panel area-kpi1">
+            <div class="mini-kpi">
+                <div class="kpi-label">Total Rows Target</div>
+                <div class="kpi-value neutral" id="kpi-rows">{{ project.total_rows }}</div>
+            </div>
+            <div class="mini-kpi">
+                <div class="kpi-label">Analyzed Columns</div>
+                <div class="kpi-value accent" id="kpi-cols">{{ project.total_columns }}</div>
+            </div>
+            <div class="mini-kpi">
+                <div class="kpi-label">Goal / Prediction</div>
+                <div class="kpi-value">99.98% <i class="fa-solid fa-arrow-trend-up" style="font-size:1rem;"></i></div>
+            </div>
+        </div>
+
+        <!-- Filters / Secondary Controls -->
+        <div class="glass-panel area-kpi2"
+            style="display:flex; flex-direction:column; justify-content:center; gap: 1rem;">
+            <div>
+                <label class="kpi-label" style="display:block;">Analysis Metric (Y-Axis)</label>
+                <select id="metric-select" class="control-select" style="width:100%;">
+                </select>
+            </div>
+            <div>
+                <label class="kpi-label" style="display:block;">Primary Dimension (X-Axis)</label>
+                <select id="dimension-select" class="control-select" style="width:100%;">
+                </select>
+            </div>
+            <div>
+                <label class="kpi-label" style="display:block;">Main Chart Type</label>
+                <select id="chart-type-select" class="control-select" style="width:100%;">
+                    <option value="scatter">Scatter Plot</option>
+                    <option value="line" selected>Line Chart</option>
+                    <option value="bar">Bar Chart</option>
+                    <option value="box">Box Plot</option>
+                    <option value="histogram">Histogram</option>
+                </select>
+            </div>
+            <div>
+                <label class="kpi-label" style="display:block;">GroupBy Action</label>
+                <select id="group-filter" class="control-select" style="width:100%;">
+                    <option value="sum">Sum</option>
+                    <option value="avg">Average</option>
+                    <option value="count">Count</option>
+                    <option value="min">Minimum</option>
+                    <option value="max">Maximum</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Main Chart -->
+        <div class="glass-panel area-main-chart">
+            <div class="panel-title">
+                <span id="main-chart-title">Primary Distribution</span>
+                <i class="fa-solid fa-chart-line" style="color:var(--text-secondary);"></i>
+            </div>
+            <div class="chart-container-fill" style="position: relative; width: 100%; height: 100%;">
+                <div id="mainChart" style="position: absolute; top:0; left:0; width:100%; height:100%;"></div>
+            </div>
+        </div>
+
+        <!-- Side Chart 1 (Pie) -->
+        <div class="glass-panel area-side-chart1">
+            <div class="panel-title">
+                <span id="pie-chart-title">Composition Segment</span>
+                <i class="fa-solid fa-chart-pie" style="color:var(--text-secondary);"></i>
+            </div>
+            <div class="chart-container-fill" style="position: relative; width: 100%; height: 100%; min-height:200px;">
+                <div id="pieChart" style="position: absolute; top:0; left:0; width:100%; height:100%;"></div>
+            </div>
+        </div>
+
+        <!-- Side Chart 2 (Bar) -->
+        <div class="glass-panel area-side-chart2">
+            <div class="panel-title">
+                <span id="bar-chart-title">Dimensional Breakdown</span>
+                <i class="fa-solid fa-chart-bar" style="color:var(--text-secondary);"></i>
+            </div>
+            <div class="chart-container-fill" style="position: relative; width: 100%; height: 100%; min-height:200px;">
+                <div id="barChart" style="position: absolute; top:0; left:0; width:100%; height:100%;"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Fallback if no data -->
+    <div id="no-data-panel" class="glass-panel" style="display:none; text-align:center; padding: 4rem 2rem;">
+        <i class="fa-solid fa-database" style="font-size: 3rem; color: #475569; margin-bottom: 1rem;"></i>
+        <h3 style="color: #e2e8f0;">No Dataset Available</h3>
+        <p style="color: #94a3b8; max-width: 500px; margin: 0 auto;">We couldn't load or parse the dataset for this
+            project. Ensure a valid CSV file was uploaded.</p>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Include PapaParse for CSV parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<!-- Include SheetJS for Excel parsing -->
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<!-- Include Plotly for advanced BI visualizations -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const datasetUrl = document.getElementById('dataset-url').value;
+
+        const loadingPanel = document.getElementById('loading-panel');
+        const mainDashboard = document.getElementById('main-dashboard');
+        const noDataPanel = document.getElementById('no-data-panel');
+
+        if (!datasetUrl) {
+            loadingPanel.style.display = 'none';
+            noDataPanel.style.display = 'block';
+            return;
+        }
+
+        const isCsv = datasetUrl.toLowerCase().endsWith('.csv');
+        const isExcel = datasetUrl.toLowerCase().endsWith('.xlsx') || datasetUrl.toLowerCase().endsWith('.xls');
+
+        if (!isCsv && !isExcel) {
+            console.warn("Unsupported file format for browser dashboard view.");
+            loadingPanel.style.display = 'none';
+            noDataPanel.style.display = 'block';
+            return;
+        }
+
+        // Colors mimicking dark premium theme
+        const chartColors = [
+            '#7c3aed', '#2563eb', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6', '#3b82f6'
+        ];
+
+        const plotlyLayoutTemplate = {
+            plot_bgcolor: 'transparent',
+            paper_bgcolor: 'transparent',
+            font: { family: 'Inter, sans-serif', color: '#cbd5e1' },
+            xaxis: { gridcolor: 'rgba(255, 255, 255, 0.05)', zerolinecolor: 'rgba(255, 255, 255, 0.1)' },
+            yaxis: { gridcolor: 'rgba(255, 255, 255, 0.05)', zerolinecolor: 'rgba(255, 255, 255, 0.1)' }
+        };
+
+        let globalDataInfo = {
+            categoricalCols: [],
+            numericCols: [],
+            parsedData: null
+        };
+
+        if (isCsv) {
+            Papa.parse(datasetUrl, {
+                download: true,
+                header: true,
+                dynamicTyping: true, // auto converts numbers
+                skipEmptyLines: true,
+                preview: 20000, // Limit to prevent browser timeout/crash on large files
+                complete: function (results) {
+                    if (results.errors.length) {
+                        console.error("PapaParse Errors:", results.errors);
+                    }
+                    processLoadedData(results.data);
+                },
+                error: function (err) {
+                    console.error("Error fetching/parsing CSV:", err);
+                    showNoData();
+                }
+            });
+        } else if (isExcel) {
+            fetch(datasetUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error("Failed to fetch Excel file.");
+                    return response.arrayBuffer();
+                })
+                .then(buffer => {
+                    const workbook = XLSX.read(buffer, { type: 'array' });
+                    // Use the first sheet
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: null });
+                    processLoadedData(jsonData);
+                })
+                .catch(err => {
+                    console.error("Error parsing Excel:", err);
+                    showNoData();
+                });
+        }
+
+        function processLoadedData(data) {
+            if (!data || data.length === 0) {
+                showNoData();
+                return;
+            }
+            analyzeSchema(data);
+            buildDashboard();
+            loadingPanel.style.display = 'none';
+            mainDashboard.style.display = 'grid';
+        }
+
+        function showNoData() {
+            loadingPanel.style.display = 'none';
+            noDataPanel.style.display = 'block';
+        }
+
+        function analyzeSchema(data) {
+            globalDataInfo.parsedData = data;
+            const firstRow = data[0];
+
+            for (const key in firstRow) {
+                if (firstRow.hasOwnProperty(key)) {
+                    // simple type check based on first valid row
+                    let typeFound = false;
+                    for (let i = 0; i < Math.min(data.length, 10); i++) {
+                        if (data[i][key] !== null && data[i][key] !== undefined) {
+                            if (typeof data[i][key] === 'number') {
+                                globalDataInfo.numericCols.push(key);
+                            } else {
+                                globalDataInfo.categoricalCols.push(key);
+                            }
+                            typeFound = true;
+                            break;
+                        }
+                    }
+                    // Default to categorical if all empty in first 10
+                    if (!typeFound) globalDataInfo.categoricalCols.push(key);
+                }
+            }
+
+            // Exclude IDs from default metric if possible
+            let usefulMetrics = globalDataInfo.numericCols.filter(c => {
+                let l = c.toLowerCase();
+                return !(l === 'id' || l.includes('_id') || l.includes('id_') || l.endsWith('id') || l === 'transaction');
+            });
+            if (usefulMetrics.length === 0 && globalDataInfo.numericCols.length > 0) usefulMetrics = globalDataInfo.numericCols;
+
+            const metricSelect = document.getElementById('metric-select');
+            metricSelect.innerHTML = '';
+            usefulMetrics.forEach(val => {
+                metricSelect.innerHTML += `<option value="${val}">${val}</option>`;
+            });
+
+            // Filter out binary garbage for categories
+            const validCats = globalDataInfo.categoricalCols.filter(col => {
+                const sample = [...new Set(data.map(item => item[col]))].filter(v => v).slice(0, 10);
+                return sample.every(v => /^[\x20-\x7E\sA-Za-z0-9-_.,]+$/.test(String(v)));
+            });
+
+            const dimSelect = document.getElementById('dimension-select');
+            dimSelect.innerHTML = '';
+            if (validCats.length > 0) {
+                validCats.forEach(val => {
+                    dimSelect.innerHTML += `<option value="${val}">${val}</option>`;
+                });
+
+                dimSelect.addEventListener('change', buildDashboard);
+                metricSelect.addEventListener('change', buildDashboard);
+                document.getElementById('group-filter').addEventListener('change', buildDashboard);
+                document.getElementById('chart-type-select').addEventListener('change', buildDashboard);
+            } else {
+                document.querySelector('.area-kpi2').style.display = 'none';
+            }
+        }
+
+        function buildDashboard() {
+            const data = globalDataInfo.parsedData;
+            if (!data || data.length === 0) return;
+
+            const aggMode = document.getElementById('group-filter').value;
+            const numCol1 = document.getElementById('metric-select').value;
+            const catCol = document.getElementById('dimension-select').value;
+
+            if (!numCol1 || !catCol) return;
+
+            // Secondary category (just picking another one if it exists to diversify charts)
+            let catCol2 = catCol;
+            const otherCats = globalDataInfo.categoricalCols.filter(c => c !== catCol);
+            if (otherCats.length > 0) catCol2 = otherCats[0];
+
+
+            // Grouping Helper
+            function groupBy(data, keyCol, valCol, type = 'sum', limit = 10) {
+                let grouped = {};
+                data.forEach(item => {
+                    let k = item[keyCol] || 'Unknown';
+                    let v = Number(item[valCol]) || 0;
+                    if (!grouped[k]) grouped[k] = { sum: 0, count: 0, min: v, max: v };
+                    grouped[k].sum += v;
+                    grouped[k].count += 1;
+                    if (v < grouped[k].min) grouped[k].min = v;
+                    if (v > grouped[k].max) grouped[k].max = v;
+                });
+
+                let resultArr = Object.keys(grouped).map(k => {
+                    let val = 0;
+                    if (type === 'sum') val = grouped[k].sum;
+                    else if (type === 'avg') val = grouped[k].sum / grouped[k].count;
+                    else if (type === 'count') val = grouped[k].count;
+                    else if (type === 'min') val = grouped[k].min;
+                    else if (type === 'max') val = grouped[k].max;
+
+                    return {
+                        label: k,
+                        value: val
+                    };
+                });
+
+                // Sort decending and slice
+                resultArr.sort((a, b) => b.value - a.value);
+                return resultArr.slice(0, limit);
+            }
+
+            // ---------- MAIN CHART (Dynamic Plotly) -------------
+
+            // If we have Date col, use it, else use categorical
+            let xAxisCol = catCol;
+            // Let's try to find a date column
+            const timeCols = globalDataInfo.categoricalCols.filter(c => c.toLowerCase().includes('date') || c.toLowerCase().includes('time') || c.toLowerCase().includes('year'));
+            if (timeCols.length > 0) xAxisCol = timeCols[0];
+
+            let mainPlotData = [];
+            if (xAxisCol && numCol1) {
+                mainPlotData = groupBy(data, xAxisCol, numCol1, aggMode, 50); // Show more points for Plotly
+                mainPlotData.sort((a, b) => String(a.label).localeCompare(String(b.label)));
+            }
+
+            const selectedChartType = document.getElementById('chart-type-select').value;
+
+            if (mainPlotData.length > 0 || selectedChartType === 'histogram' || selectedChartType === 'box') {
+                let aggTitle = 'Sum of';
+                if (aggMode === 'avg') aggTitle = 'Average';
+                if (aggMode === 'count') aggTitle = 'Count of';
+                if (aggMode === 'min') aggTitle = 'Min of';
+                if (aggMode === 'max') aggTitle = 'Max of';
+                document.getElementById('main-chart-title').innerText = `${aggTitle} ${numCol1} over ${xAxisCol}`;
+
+                let trace = {
+                    x: mainPlotData.map(d => d.label),
+                    y: mainPlotData.map(d => d.value),
+                    type: selectedChartType,
+                    marker: { color: '#7c3aed' },
+                    line: { color: '#7c3aed', width: 3 }
+                };
+
+                if (selectedChartType === 'line') {
+                    trace.type = 'scatter';
+                    trace.mode = 'lines+markers';
+                    trace.fill = 'tozeroy';
+                    trace.fillcolor = 'rgba(124, 58, 237, 0.2)';
+                } else if (selectedChartType === 'scatter') {
+                    trace.type = 'scatter';
+                    trace.mode = 'markers';
+                    trace.marker.size = 8;
+                } else if (selectedChartType === 'histogram') {
+                    // For histogram we want the raw data distribution of the metric, not grouped!
+                    document.getElementById('main-chart-title').innerText = `Distribution of ${numCol1}`;
+                    trace = {
+                        x: data.map(d => Number(d[numCol1])).filter(v => !isNaN(v)),
+                        type: 'histogram',
+                        marker: { color: '#7c3aed' }
+                    };
+                } else if (selectedChartType === 'box') {
+                    // Box plot of the metric grouped by the dimension
+                    document.getElementById('main-chart-title').innerText = `Distribution of ${numCol1} by ${xAxisCol}`;
+                    trace = {
+                        x: data.map(d => String(d[xAxisCol])),
+                        y: data.map(d => Number(d[numCol1])),
+                        type: 'box',
+                        marker: { color: '#7c3aed' }
+                    };
+                }
+
+                const layout = Object.assign({}, plotlyLayoutTemplate, {
+                    margin: { t: 10, r: 10, b: 40, l: 40 }
+                });
+
+                Plotly.newPlot('mainChart', [trace], layout, { responsive: true, displayModeBar: false });
+            }
+
+            // ---------- SIDE CHART 1 (Pie) -------------
+            if (catCol2 && numCol1) {
+                let pieData = groupBy(data, catCol2, numCol1, 'sum', 7); // top 7
+
+                if (pieData.length > 0) {
+                    document.getElementById('pie-chart-title').innerText = `Share of ${numCol1} by ${catCol2}`;
+
+                    let trace = {
+                        labels: pieData.map(d => d.label),
+                        values: pieData.map(d => d.value),
+                        type: 'pie',
+                        hole: 0.6,
+                        marker: { colors: chartColors },
+                        textinfo: 'none'
+                    };
+
+                    const layout = Object.assign({}, plotlyLayoutTemplate, {
+                        showlegend: true,
+                        legend: { orientation: 'v', x: 1, y: 0.5 },
+                        margin: { t: 10, r: 0, b: 10, l: 0 }
+                    });
+
+                    Plotly.newPlot('pieChart', [trace], layout, { responsive: true, displayModeBar: false });
+                }
+            }
+
+            // ---------- SIDE CHART 2 (Bar) -------------
+            let barXCol = catCol;
+            if (catCol === xAxisCol && globalDataInfo.categoricalCols.length > 2) {
+                barXCol = globalDataInfo.categoricalCols[2];
+            }
+
+            if (barXCol && numCol1) {
+                let barData = groupBy(data, barXCol, numCol1, aggMode, 7);
+
+                if (barData.length > 0) {
+                    document.getElementById('bar-chart-title').innerText = `Top 7 ${barXCol} by ${numCol1}`;
+
+                    let trace = {
+                        x: barData.map(d => String(d.label)),
+                        y: barData.map(d => d.value),
+                        type: 'bar',
+                        marker: { color: '#2563eb' }
+                    };
+
+                    const layout = Object.assign({}, plotlyLayoutTemplate, {
+                        margin: { t: 10, r: 10, b: 40, l: 40 }
+                    });
+
+                    Plotly.newPlot('barChart', [trace], layout, { responsive: true, displayModeBar: false });
+                }
+            }
+        }
+
+    });
+</script>
+{% endblock %}

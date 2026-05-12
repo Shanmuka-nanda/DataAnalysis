@@ -1,0 +1,40 @@
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+env/
+venv/
+.venv/
+
+# Django database
+db.sqlite3
+*.sqlite3
+
+# Django media and static files
+media/
+staticfiles/
+
+# Environment variables
+.env
+
+# Python package builds
+build/
+dist/
+*.egg-info/
+
+# Logs and generated outputs
+api_test_log.txt
+reanalyze_output.txt
+*_out*.txt
+*.log
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Jupyter notebooks
+.ipynb_checkpoints

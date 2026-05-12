@@ -1,0 +1,418 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Applify — Let's get started</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --purple: #7c3aed;
+            --purple-light: #8b5cf6;
+            --orange: #f97316;
+            --bg: #0d0f1a;
+            --bg-card: #131629;
+            --bg-input: #1a1d2e;
+            --border: rgba(255,255,255,0.08);
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --radius: 16px;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        /* ── animated mesh background ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 20% 10%, rgba(124,58,237,0.18) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 80%, rgba(249,115,22,0.12) 0%, transparent 55%),
+                radial-gradient(ellipse 50% 40% at 60% 30%, rgba(139,92,246,0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .page {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        /* ── Logo bar ── */
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 48px;
+            animation: fadeUp 0.5s ease both;
+        }
+        .brand-orb {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: conic-gradient(from 180deg, #f97316 0deg, #7c3aed 360deg);
+        }
+        .brand h1 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        /* ── Card ── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 680px;
+            padding: 48px 52px;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+            animation: fadeUp 0.6s ease 0.1s both;
+        }
+
+        /* ── Steps indicator ── */
+        .steps {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 36px;
+        }
+        .step-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--border);
+            transition: background 0.3s, width 0.3s;
+        }
+        .step-dot.active {
+            width: 28px;
+            border-radius: 4px;
+            background: var(--purple-light);
+        }
+
+        /* ── Headings ── */
+        .card-title {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.8px;
+            line-height: 1.25;
+            margin-bottom: 8px;
+        }
+        .card-title span { color: var(--purple-light); }
+        .card-subtitle {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        /* ── Form ── */
+        .form-group {
+            margin-bottom: 24px;
+        }
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 10px;
+        }
+        .form-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-input::placeholder { color: #475569; }
+        .form-input:focus {
+            border-color: var(--purple-light);
+            box-shadow: 0 0 0 3px rgba(139,92,246,0.15);
+        }
+
+        /* ── Goal cards grid ── */
+        .goal-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+        .goal-card {
+            position: relative;
+            cursor: pointer;
+        }
+        .goal-card input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .goal-card label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 20px 16px;
+            background: var(--bg-input);
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+            text-align: center;
+        }
+        .goal-card input[type="radio"]:checked + label {
+            border-color: var(--purple-light);
+            background: rgba(139,92,246,0.1);
+            box-shadow: 0 0 0 3px rgba(139,92,246,0.12);
+        }
+        .goal-card label:hover {
+            border-color: rgba(139,92,246,0.5);
+        }
+        .goal-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            background: #eef2ff; /* neutral soft background */
+            color: #4f46e5; /* primary brand color for icons */
+        }
+        .goal-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1.3;
+        }
+        .goal-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* Recruitment badge */
+        .featured-badge {
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, var(--purple), var(--orange));
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            padding: 2px 10px;
+            border-radius: 20px;
+            white-space: nowrap;
+            z-index: 1;
+        }
+
+        /* ── Divider ── */
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 32px 0;
+        }
+
+        /* ── Submit button ── */
+        .btn-submit {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--purple) 0%, #5b21b6 100%);
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: opacity 0.2s, transform 0.15s;
+            letter-spacing: 0.2px;
+        }
+        .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-submit:active { transform: translateY(0); }
+
+        /* ── Footer note ── */
+        .skip-link {
+            margin-top: 20px;
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+            animation: fadeUp 0.7s ease 0.2s both;
+        }
+        .skip-link a {
+            color: var(--purple-light);
+            text-decoration: none;
+        }
+        .skip-link a:hover { text-decoration: underline; }
+
+        /* ── Animations ── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 600px) {
+            .card { padding: 32px 24px; }
+            .goal-grid { grid-template-columns: 1fr; }
+            .card-title { font-size: 22px; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <!-- Brand -->
+    <div class="brand">
+        <div class="brand-orb"></div>
+        <h1>Applify.</h1>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card">
+        <!-- Step indicator -->
+        <div class="steps">
+            <div class="step-dot active"></div>
+            <div class="step-dot active"></div>
+            <div class="step-dot"></div>
+        </div>
+
+        <h2 class="card-title">Welcome to <span>Applify</span>.<br>Let's personalize your workspace.</h2>
+        <p class="card-subtitle">
+            Tell us a bit about your company so we can tailor your analytics experience — dashboards, reports, and insights built exactly for your team.
+        </p>
+
+        <form method="post" autocomplete="off">
+            {% csrf_token %}
+
+            <!-- Company Name -->
+            <div class="form-group">
+                <label class="form-label" for="company_name">Company Name</label>
+                <input
+                    class="form-input"
+                    type="text"
+                    id="company_name"
+                    name="company_name"
+                    placeholder="e.g. Acme Corp, TalentHive, NovaSales…"
+                    required
+                    autofocus
+                >
+            </div>
+
+            <!-- Industry -->
+            <div class="form-group">
+                <label class="form-label" for="industry">Industry <span style="color:#475569;font-weight:400;text-transform:none;">(optional)</span></label>
+                <input
+                    class="form-input"
+                    type="text"
+                    id="industry"
+                    name="industry"
+                    placeholder="e.g. Technology, Staffing, Finance, Healthcare…"
+                >
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Primary Focus -->
+            <div class="form-group">
+                <label class="form-label">Primary Analytics Focus</label>
+                <div class="goal-grid">
+
+                    <!-- Recruitment (featured) -->
+                    <div class="goal-card">
+                        <div class="featured-badge">⭐ Most Popular</div>
+                        <input type="radio" id="goal_recruitment" name="primary_goal" value="Recruitment" checked>
+                        <label for="goal_recruitment">
+                            <div class="goal-icon"><i class="fa-solid fa-users"></i></div>
+                            <div>
+                                <div class="goal-name">Recruitment Analytics</div>
+                                <div class="goal-desc">Pipeline, sourcing, and hiring metrics</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Company Growth -->
+                    <div class="goal-card">
+                        <input type="radio" id="goal_growth" name="primary_goal" value="Company Growth">
+                        <label for="goal_growth">
+                            <div class="goal-icon"><i class="fa-solid fa-building"></i></div>
+                            <div>
+                                <div class="goal-name">Company Growth</div>
+                                <div class="goal-desc">Growth, retention, and business trend metrics</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Sales -->
+                    <div class="goal-card">
+                        <input type="radio" id="goal_sales" name="primary_goal" value="Sales">
+                        <label for="goal_sales">
+                            <div class="goal-icon"><i class="fa-solid fa-chart-line"></i></div>
+                            <div>
+                                <div class="goal-name">Sales Analytics</div>
+                                <div class="goal-desc">Revenue, pipeline, and conversion</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- General -->
+                    <div class="goal-card">
+                        <input type="radio" id="goal_general" name="primary_goal" value="General">
+                        <label for="goal_general">
+                            <div class="goal-icon"><i class="fa-solid fa-database"></i></div>
+                            <div>
+                                <div class="goal-name">General Data</div>
+                                <div class="goal-desc">Flexible analysis for any dataset</div>
+                            </div>
+                        </label>
+                    </div>
+
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit">
+                <i class="fa-solid fa-rocket"></i>
+                Launch My Workspace
+            </button>
+        </form>
+    </div>
+
+    <!-- Skip link -->
+    <p class="skip-link">
+        Want to configure this later?
+        <a href="{% url 'dashboard' %}">Skip for now →</a>
+    </p>
+
+</div>
+</body>
+</html>

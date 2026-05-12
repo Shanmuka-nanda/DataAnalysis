@@ -1,0 +1,748 @@
+{% extends "base.html" %}
+{% block title %}Report Builder | DataAnalysis{% endblock %}
+{% block header_title %}Report Builder Dashboard{% endblock %}
+
+{% block extra_css %}
+<!-- GridStack.js for Drag-and-Drop Dashboard -->
+<link href="https://cdn.jsdelivr.net/npm/gridstack@9.2.2/dist/gridstack.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/gridstack@9.2.2/dist/gridstack-all.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+    /* Prevent plotting issues */
+    .grid-stack-item-content { background: white; border-radius: 8px; border: 1px solid #f3f4f6; overflow: hidden;}
+    .js-plotly-plot, .plot-container { width: 100% !important; height: 100% !important; }
+    /* Keep resize handles invisible but interactive for cursor-based resizing */
+    .grid-stack .ui-resizable-handle {
+        opacity: 0 !important;
+        background: transparent !important;
+    }
+    .grid-stack .ui-resizable-se,
+    .grid-stack .ui-resizable-sw,
+    .grid-stack .ui-resizable-ne,
+    .grid-stack .ui-resizable-nw {
+        width: 16px !important;
+        height: 16px !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex justify-between items-center">
+    <div>
+        <h2 class="text-2xl font-bold text-gray-800">Dynamic Dashboard Builder</h2>
+        <p class="text-sm text-gray-500">Transform your dataset into a drag-and-drop interactive dashboard.</p>
+    </div>
+    <div class="flex gap-3">
+        <button id="addWidgetBtn" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium items-center gap-2 transition-colors" onclick="openWidgetModal()">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Add Widget
+        </button>
+        <button id="undoBtn" class="hidden bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium items-center gap-2 transition-colors" onclick="undoLastChange()" title="Undo last widget change">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a4 4 0 010 8h-1m-9-8l4-4m-4 4l4 4"></path></svg>
+            Undo
+        </button>
+        <button id="excelBtn" class="hidden bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium items-center gap-2 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            Export Excel
+        </button>
+        <button id="pdfBtn" class="hidden bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium items-center gap-2 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            Download PDF
+        </button>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 gap-6">
+
+    <!-- Top Panel: Data Sources -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4 pb-4 border-b border-gray-100">
+            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+            Projects
+        </h3>
+
+        <div id="projectList" data-selected-project-id="{{ selected_project_id|default:'' }}" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {% for project in projects %}
+            <button class="project-btn w-full text-left p-4 rounded-xl border border-gray-100 bg-gray-50 hover:bg-indigo-50 hover:border-indigo-200 transition-colors flex justify-between items-center group" data-id="{{ project.id }}" data-name="{{ project.name }}">
+                <div class="overflow-hidden">
+                    <strong class="block text-sm font-bold text-gray-800 truncate">{{ project.name }}</strong>
+                    <span class="text-xs text-gray-500">{{ project.total_rows|default:'0' }} Rows</span>
+                </div>
+                <svg class="w-5 h-5 text-gray-400 group-hover:text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            </button>
+            {% empty %}
+            <div class="text-center py-10 border border-dashed border-gray-200 rounded-xl">
+                <svg class="w-10 h-10 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                <p class="text-sm text-gray-500 mb-4">No data sources.</p>
+                <a href="{% url 'projects:project_create' %}" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-4 py-2 rounded-lg hover:bg-indigo-100">Upload Data</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Right Panel: Dashboard Preview -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 min-h-[780px] relative">
+        
+        <div id="loading" class="hidden absolute inset-0 bg-white/80 z-50 flex-col items-center justify-center rounded-xl backdrop-blur-sm shadow-sm">
+            <svg class="w-10 h-10 text-indigo-600 animate-spin mb-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span class="text-gray-800 font-medium">Processing Data Engine...</span>
+        </div>
+
+        <div id="noSel" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+            <svg class="w-16 h-16 mb-4 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            <p class="font-medium text-gray-500">Select a dataset to generate visual analytics.</p>
+        </div>
+
+        <div id="printArea" class="hidden w-full h-full p-8 overflow-y-auto">
+            <!-- Header -->
+            <div class="flex flex-col md:flex-row justify-between items-end border-b border-gray-200 pb-6 mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800" id="repTitle">Analytics Dashboard</h1>
+                    <p class="text-gray-500 font-medium mt-2">Source: <strong id="repProjName" class="text-indigo-600 font-bold"></strong></p>
+                </div>
+                <div class="text-right text-xs text-gray-400 font-medium">
+                    Generated: <strong id="repDate" class="text-gray-600"></strong><br>
+                    Data Analysis Dynamic Reporting
+                </div>
+            </div>
+
+            <!-- Slicers Area -->
+            <div id="slicersWrapper" class="hidden my-6 bg-gray-50 border border-gray-200 rounded-xl p-5">
+                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Global Data Filters</h4>
+                <div id="slicersArea" class="flex flex-wrap gap-4"></div>
+            </div>
+
+            <!-- Dashboard Grid Area -->
+            <div class="bg-gray-50/50 rounded-xl border border-dashed border-gray-200 min-h-[500px] p-2">
+                <div class="grid-stack" id="dashboardGrid"></div>
+            </div>
+
+            <div class="text-center text-xs text-gray-400 border-t border-gray-200 pt-6 mt-10">
+                End of Dashboard • Powered by Plotly & GridStack.js
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="widgetModal" class="hidden fixed inset-0 bg-black/50 z-[2000] flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-white p-8 rounded-2xl w-[440px] shadow-xl border border-gray-100">
+        <h3 class="text-xl font-bold text-gray-800 mb-6">Configure Widget</h3>
+
+        <label class="block text-sm font-bold text-gray-700 mb-2">Widget Title</label>
+        <input type="text" id="newWidgetTitle" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 mb-5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="e.g. Sales by Region">
+
+        <label class="block text-sm font-bold text-gray-700 mb-2">Chart Type</label>
+        <select id="newWidgetType" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 mb-5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" onchange="onWidgetTypeChange()">
+            <option value="bar">Bar Chart</option>
+            <option value="pie">Pie Chart</option>
+            <option value="scatter">Scatter Plot</option>
+            <option value="kpi">KPI Card</option>
+        </select>
+
+        <label class="block text-sm font-bold text-gray-700 mb-2">Group / X Axis Column</label>
+        <select id="newWidgetXCol" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 mb-5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"></select>
+
+        <label class="block text-sm font-bold text-gray-700 mb-2">Value Column</label>
+        <select id="newWidgetYCol" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 mb-5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"></select>
+
+        <label class="block text-sm font-bold text-gray-700 mb-2">Aggregation</label>
+        <select id="newWidgetAgg" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 mb-8 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+            <option value="count">Count</option>
+            <option value="sum">Sum</option>
+            <option value="avg">Average</option>
+            <option value="min">Minimum</option>
+            <option value="max">Maximum</option>
+        </select>
+
+        <div class="flex justify-end gap-3">
+            <button class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-colors" onclick="document.getElementById('widgetModal').classList.add('hidden')">Cancel</button>
+            <button class="px-5 py-2.5 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors shadow-sm" onclick="confirmAddWidget()">Create Widget</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const btns = document.querySelectorAll('.project-btn');
+    const printArea = document.getElementById('printArea');
+    const noSel = document.getElementById('noSel');
+    const pdfBtn = document.getElementById('pdfBtn');
+    const excelBtn = document.getElementById('excelBtn');
+    const undoBtn = document.getElementById('undoBtn');
+    const loading = document.getElementById('loading');
+    const addWidgetBtn = document.getElementById('addWidgetBtn');
+
+    let currentDataset = [];
+    let activeFilters = {};
+    let numCols = [];
+    let catCols = [];
+    let widgetConfigs = [];
+    let widgetCounter = 0;
+    let undoStack = [];
+
+    function updateUndoButton() {
+        if (!undoBtn) return;
+        if (undoStack.length > 0) {
+            undoBtn.classList.remove('hidden');
+            undoBtn.classList.add('flex');
+        } else {
+            undoBtn.classList.add('hidden');
+            undoBtn.classList.remove('flex');
+        }
+    }
+
+    function captureWidgetState() {
+        return {
+            widgetCounter,
+            widgets: widgetConfigs.map(cfg => {
+                const el = document.querySelector(`.grid-stack-item[data-widget-id="${cfg.id}"]`);
+                const node = el ? el.gridstackNode : null;
+                return {
+                    config: { ...cfg },
+                    gridPos: {
+                        x: node ? node.x : 0,
+                        y: node ? node.y : 0,
+                        w: node ? node.w : (cfg.type === 'kpi' ? 3 : 6),
+                        h: node ? node.h : (cfg.type === 'kpi' ? 2 : 4),
+                    }
+                };
+            })
+        };
+    }
+
+    function pushUndoState() {
+        undoStack.push(captureWidgetState());
+        if (undoStack.length > 30) undoStack.shift();
+        updateUndoButton();
+    }
+
+    function restoreWidgetState(snapshot) {
+        if (!window.grid || !snapshot) return;
+        window.grid.removeAll();
+        widgetConfigs = [];
+        widgetCounter = snapshot.widgetCounter || 0;
+
+        (snapshot.widgets || []).forEach(item => {
+            addWidgetConfig(item.config, item.gridPos, { preserveId: true });
+        });
+    }
+
+    function undoLastChange() {
+        if (undoStack.length === 0) return;
+        const snapshot = undoStack.pop();
+        restoreWidgetState(snapshot);
+        updateUndoButton();
+        updateDashboard();
+    }
+
+    btns.forEach(btn => {
+        btn.addEventListener('click', async () => {
+            btns.forEach(b => {
+                b.classList.remove('border-indigo-500', 'bg-indigo-50', 'ring-1', 'ring-indigo-500');
+            });
+            btn.classList.add('border-indigo-500', 'bg-indigo-50', 'ring-1', 'ring-indigo-500');
+
+            const projId = btn.getAttribute('data-id');
+            const projName = btn.getAttribute('data-name');
+
+            document.getElementById('repProjName').innerText = projName;
+            document.getElementById('repDate').innerText = new Date().toLocaleDateString('en-US');
+
+            noSel.classList.add('hidden');
+            printArea.classList.add('hidden');
+            pdfBtn.classList.add('hidden');
+            excelBtn.classList.add('hidden');
+            addWidgetBtn.classList.add('hidden');
+            undoBtn.classList.add('hidden');
+            loading.classList.remove('hidden');
+            loading.classList.add('flex');
+
+            try {
+                const response = await fetch(`/reports/api/data/${projId}/`);
+                const result = await response.json();
+
+                if (result.success) {
+                    currentDataset = result.data;
+                    numCols = result.numeric_columns;
+                    catCols = result.categorical_columns;
+                    activeFilters = {}; 
+                    undoStack = [];
+                    buildSlicers();
+                    updateWidgetFieldOptions();
+                    updateUndoButton();
+
+                    if (!window.grid) {
+                        window.grid = GridStack.init({
+                            cellHeight: 60,
+                            margin: 8,
+                            float: true,
+                            column: 12,
+                            resizable: { handles: 'all' },
+                            alwaysShowResizeHandle: true
+                        });
+                        window.grid.on('resizestop', () => {
+                            updateDashboard();
+                            setTimeout(resizeAllPlots, 40);
+                        });
+                        window.grid.on('dragstop', () => {
+                            setTimeout(resizeAllPlots, 40);
+                        });
+                    }
+                    addDefaultWidgets();
+                    updateDashboard();
+
+                    loading.classList.add('hidden');
+                    loading.classList.remove('flex');
+                    printArea.classList.remove('hidden');
+                    
+                    addWidgetBtn.classList.remove('hidden');
+                    addWidgetBtn.classList.add('flex');
+                    pdfBtn.classList.remove('hidden');
+                    pdfBtn.classList.add('flex');
+                    excelBtn.classList.remove('hidden');
+                    excelBtn.classList.add('flex');
+
+                    setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+                } else {
+                    alert('Error: ' + result.error);
+                    loading.classList.add('hidden');
+                    noSel.classList.remove('hidden');
+                }
+            } catch (err) {
+                alert('Failed to fetch data');
+                console.error(err);
+                loading.classList.add('hidden');
+                noSel.classList.remove('hidden');
+            }
+        });
+    });
+
+    const projectListEl = document.getElementById('projectList');
+    if (projectListEl && projectListEl.dataset.selectedProjectId) {
+        const preBtn = document.querySelector(`.project-btn[data-id="${projectListEl.dataset.selectedProjectId}"]`);
+        if (preBtn) preBtn.click();
+    }
+
+    function addDefaultWidgets() {
+        if (!window.grid) return;
+        window.grid.removeAll();
+        widgetConfigs = [];
+
+        addWidgetConfig({
+            title: 'Total Rows',
+            type: 'kpi',
+            xCol: catCols[0] || '',
+            yCol: numCols[0] || '',
+            aggregation: 'count',
+        }, { x: 0, y: 0, w: 4, h: 2 });
+
+        addWidgetConfig({
+            title: `Top ${catCols[0] || 'Category'} Distribution`,
+            type: 'bar',
+            xCol: catCols[0] || '',
+            yCol: numCols[0] || '',
+            aggregation: numCols.length ? 'sum' : 'count',
+        }, { x: 4, y: 0, w: 8, h: 4 });
+
+        addWidgetConfig({
+            title: `${catCols[1] || catCols[0] || 'Category'} Composition`,
+            type: 'pie',
+            xCol: catCols[1] || catCols[0] || '',
+            yCol: numCols[0] || '',
+            aggregation: numCols.length ? 'sum' : 'count',
+        }, { x: 0, y: 2, w: 4, h: 3 });
+    }
+
+    function addWidgetConfig(config, gridPos, options = {}) {
+        const id = options.preserveId && config.id ? config.id : `widget_${++widgetCounter}`;
+        const chartElId = `${id}_chart`;
+        const valueElId = `${id}_value`;
+
+        const base = {
+            id,
+            title: config.title || 'New Widget',
+            type: config.type || 'bar',
+            xCol: config.xCol || '',
+            yCol: config.yCol || '',
+            aggregation: config.aggregation || 'count',
+            chartElId,
+            valueElId,
+        };
+
+        widgetConfigs.push(base);
+
+        let contentHtml = '';
+        if (base.type === 'kpi') {
+            contentHtml = `<div class="h-full p-4 flex flex-col">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="text-sm font-bold text-gray-500 uppercase tracking-wide">${base.title}</div>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="removeWidget('${id}')" class="text-gray-400 hover:text-red-600 transition-colors" title="Delete widget">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V5h6v2m-7 4v6m4-6v6m5 2H7a2 2 0 01-2-2V7h14v10a2 2 0 01-2 2z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-1 flex items-center">
+                <div class="text-4xl font-bold text-indigo-600" id="${valueElId}">0</div>
+                </div>
+            </div>`;
+        } else {
+            contentHtml = `<div class="h-full p-3">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="text-xs font-bold text-gray-500 uppercase tracking-wide">${base.title}</div>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="removeWidget('${id}')" class="text-gray-400 hover:text-red-600 transition-colors" title="Delete widget">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V5h6v2m-7 4v6m4-6v6m5 2H7a2 2 0 01-2-2V7h14v10a2 2 0 01-2 2z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="${chartElId}" class="w-full h-[calc(100%-20px)]"></div>
+            </div>`;
+        }
+
+        const gridItem = window.grid.addWidget({
+            x: gridPos.x,
+            y: gridPos.y,
+            w: gridPos.w,
+            h: gridPos.h,
+            content: contentHtml,
+        });
+
+        if (gridItem) {
+            gridItem.setAttribute('data-widget-id', id);
+        }
+    }
+
+    function removeWidget(widgetId) {
+        pushUndoState();
+        widgetConfigs = widgetConfigs.filter(w => w.id !== widgetId);
+
+        if (!window.grid) return;
+        const el = document.querySelector(`.grid-stack-item[data-widget-id="${widgetId}"]`);
+        if (el) {
+            window.grid.removeWidget(el);
+        }
+    }
+
+    function updateWidgetFieldOptions() {
+        const xSel = document.getElementById('newWidgetXCol');
+        const ySel = document.getElementById('newWidgetYCol');
+        if (!xSel || !ySel) return;
+
+        const allCols = [...catCols, ...numCols].filter(Boolean);
+        xSel.innerHTML = `<option value="">(Auto)</option>` + allCols.map(c => `<option value="${c}">${c}</option>`).join('');
+        ySel.innerHTML = `<option value="">(None)</option>` + numCols.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    function onWidgetTypeChange() {
+        const type = document.getElementById('newWidgetType').value;
+        const xWrap = document.getElementById('newWidgetXCol');
+        const yWrap = document.getElementById('newWidgetYCol');
+        const aggWrap = document.getElementById('newWidgetAgg');
+        if (!xWrap || !yWrap || !aggWrap) return;
+
+        if (type === 'kpi') {
+            xWrap.disabled = true;
+            aggWrap.disabled = false;
+            yWrap.disabled = false;
+        } else if (type === 'scatter') {
+            xWrap.disabled = false;
+            yWrap.disabled = false;
+            aggWrap.disabled = true;
+        } else {
+            xWrap.disabled = false;
+            yWrap.disabled = false;
+            aggWrap.disabled = false;
+        }
+    }
+
+    function openWidgetModal() {
+        document.getElementById('widgetModal').classList.remove('hidden');
+        document.getElementById('widgetModal').classList.add('flex');
+        document.getElementById('newWidgetTitle').value = '';
+        updateWidgetFieldOptions();
+        onWidgetTypeChange();
+    }
+
+    function confirmAddWidget() {
+        const title = document.getElementById('newWidgetTitle').value || 'New Widget';
+        const type = document.getElementById('newWidgetType').value;
+        const xCol = document.getElementById('newWidgetXCol').value;
+        const yCol = document.getElementById('newWidgetYCol').value;
+        const agg = document.getElementById('newWidgetAgg').value;
+
+        pushUndoState();
+
+        addWidgetConfig({
+            title,
+            type,
+            xCol,
+            yCol,
+            aggregation: agg,
+        }, { x: 0, y: 0, w: type === 'kpi' ? 3 : 6, h: type === 'kpi' ? 2 : 4 });
+
+        updateDashboard();
+
+        document.getElementById('widgetModal').classList.add('hidden');
+        document.getElementById('widgetModal').classList.remove('flex');
+        setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+    }
+
+    function asNumber(value) {
+        if (value === null || value === undefined || value === '') return null;
+        const n = Number(value);
+        return Number.isFinite(n) ? n : null;
+    }
+
+    function getFilteredDataset() {
+        let filtered = currentDataset;
+        for (const [col, val] of Object.entries(activeFilters)) {
+            if (val !== "") filtered = filtered.filter(d => String(d[col]) === String(val));
+        }
+        return filtered;
+    }
+
+    function resizeAllPlots() {
+        widgetConfigs.forEach(cfg => {
+            const chartEl = document.getElementById(cfg.chartElId);
+            if (cfg.type !== 'kpi' && chartEl) {
+                try {
+                    Plotly.Plots.resize(chartEl);
+                } catch (e) {
+                    // Safe fallback; next render cycle will size correctly.
+                }
+            }
+        });
+    }
+
+    function aggregateValues(values, agg) {
+        if (!values || values.length === 0) return 0;
+        if (agg === 'count') return values.length;
+        if (agg === 'sum') return values.reduce((a, b) => a + b, 0);
+        if (agg === 'avg') return values.reduce((a, b) => a + b, 0) / values.length;
+        if (agg === 'min') return Math.min(...values);
+        if (agg === 'max') return Math.max(...values);
+        return values.length;
+    }
+
+    function groupedAggregate(rows, groupCol, valueCol, agg) {
+        const groups = {};
+        rows.forEach(r => {
+            const key = (r[groupCol] === null || r[groupCol] === undefined || r[groupCol] === '') ? 'Unknown' : String(r[groupCol]);
+            if (!groups[key]) groups[key] = [];
+
+            if (agg === 'count') {
+                groups[key].push(1);
+            } else {
+                const n = asNumber(r[valueCol]);
+                if (n !== null) groups[key].push(n);
+            }
+        });
+
+        return Object.entries(groups)
+            .map(([key, vals]) => [key, aggregateValues(vals, agg)])
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 20);
+    }
+
+    function buildSlicers() {
+        const slicerArea = document.getElementById('slicersArea');
+        const slicersWrapper = document.getElementById('slicersWrapper');
+        slicerArea.innerHTML = '';
+
+        if (currentDataset.length === 0) {
+            slicersWrapper.classList.add('hidden');
+            return;
+        }
+
+        let addedSlicers = 0;
+        let allCols = Object.keys(currentDataset[0] || {});
+
+        const addSlicer = (col, isNumeric) => {
+            if (addedSlicers >= 4) return;
+            let uniqueVals = [...new Set(currentDataset.map(d => d[col]))].filter(v => v !== null && v !== "");
+
+            if (uniqueVals.length > 0) {
+                if (uniqueVals.length > 50) uniqueVals = uniqueVals.slice(0, 50);
+                if (isNumeric) uniqueVals.sort((a, b) => Number(a) - Number(b));
+                else uniqueVals.sort();
+
+                const select = document.createElement('select');
+                select.className = 'border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-700 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-[160px] cursor-pointer';
+                select.innerHTML = `<option value="">All ${String(col).substring(0, 15)}</option>` +
+                    uniqueVals.map(v => `<option value="${v}">${String(v).substring(0, 30)}</option>`).join('');
+
+                select.addEventListener('change', (e) => {
+                    activeFilters[col] = e.target.value;
+                    updateDashboard();
+                });
+
+                slicerArea.appendChild(select);
+                addedSlicers++;
+            }
+        };
+
+        for (let col of catCols) addSlicer(col, false);
+        for (let col of numCols) addSlicer(col, true);
+        if (addedSlicers < 4) {
+            for (let col of allCols) {
+                if (!slicerArea.innerHTML.includes(`All ${String(col).substring(0, 15)}`)) addSlicer(col, false);
+            }
+        }
+
+        if (addedSlicers > 0) slicersWrapper.classList.remove('hidden');
+        else slicersWrapper.classList.add('hidden');
+    }
+
+    function updateDashboard() {
+        const filtered = getFilteredDataset();
+        renderAllWidgets(filtered);
+        setTimeout(resizeAllPlots, 30);
+    }
+
+    function renderAllWidgets(dataObj) {
+        widgetConfigs.forEach(cfg => renderWidget(cfg, dataObj));
+    }
+
+    function renderWidget(cfg, dataObj) {
+        if (cfg.type === 'kpi') {
+            const el = document.getElementById(cfg.valueElId);
+            if (!el) return;
+
+            const agg = cfg.aggregation || 'count';
+            let value = 0;
+            if (agg === 'count') {
+                if (cfg.yCol) {
+                    value = dataObj.filter(r => r[cfg.yCol] !== null && r[cfg.yCol] !== undefined && r[cfg.yCol] !== '').length;
+                } else {
+                    value = dataObj.length;
+                }
+            } else {
+                const values = dataObj.map(r => asNumber(r[cfg.yCol])).filter(v => v !== null);
+                value = aggregateValues(values, agg);
+            }
+
+            const contentBox = el.closest('.grid-stack-item-content');
+            const contentHeight = contentBox ? contentBox.clientHeight : 160;
+            const dynamicFontSize = Math.max(24, Math.min(72, Math.floor(contentHeight * 0.34)));
+            el.style.fontSize = `${dynamicFontSize}px`;
+
+            const display = Number.isFinite(value) ? (Math.round(value * 100) / 100).toLocaleString() : '0';
+            el.innerText = display;
+            return;
+        }
+
+        const targetEl = document.getElementById(cfg.chartElId);
+        if (!targetEl) return;
+
+        if (!dataObj || dataObj.length === 0) {
+            Plotly.purge(cfg.chartElId);
+            return;
+        }
+
+        const layoutConfig = {
+            margin: { t: 40, r: 20, l: 40, b: 40 },
+            font: { family: 'Inter, sans-serif', color: '#374151' },
+            paper_bgcolor: 'transparent',
+            plot_bgcolor: 'transparent',
+            xaxis: { gridcolor: '#f3f4f6', zerolinecolor: '#e5e7eb' },
+            yaxis: { gridcolor: '#f3f4f6', zerolinecolor: '#e5e7eb' }
+        };
+
+        if (cfg.type === 'scatter') {
+            const xCol = cfg.xCol || numCols[0] || catCols[0];
+            const yCol = cfg.yCol || numCols[0];
+            if (!xCol || !yCol) {
+                Plotly.purge(cfg.chartElId);
+                return;
+            }
+
+            const points = dataObj.map(r => ({ x: asNumber(r[xCol]), y: asNumber(r[yCol]) }))
+                .filter(p => p.x !== null && p.y !== null)
+                .slice(0, 1000);
+
+            const scatterData = [{
+                x: points.map(p => p.x),
+                y: points.map(p => p.y),
+                mode: 'markers',
+                type: 'scatter',
+                marker: { color: '#4f46e5', size: 8, opacity: 0.7 }
+            }];
+            Plotly.react(cfg.chartElId, scatterData, { ...layoutConfig, title: cfg.title, xaxis: { title: xCol }, yaxis: { title: yCol } }, { displayModeBar: false, responsive: true });
+            return;
+        }
+
+        const groupCol = cfg.xCol || catCols[0] || Object.keys(dataObj[0] || {})[0];
+        const agg = cfg.aggregation || 'count';
+        const valueCol = cfg.yCol || numCols[0] || groupCol;
+        if (!groupCol) {
+            Plotly.purge(cfg.chartElId);
+            return;
+        }
+
+        const grouped = groupedAggregate(dataObj, groupCol, valueCol, agg);
+        const labels = grouped.map(g => String(g[0]).substring(0, 20));
+        const values = grouped.map(g => g[1]);
+
+        if (cfg.type === 'bar') {
+            const barData = [{
+                x: labels,
+                y: values,
+                type: 'bar',
+                marker: { color: '#4f46e5' }
+            }];
+            Plotly.react(cfg.chartElId, barData, {
+                ...layoutConfig,
+                title: `${cfg.title} (${agg.toUpperCase()} of ${valueCol})`,
+                xaxis: { title: groupCol }
+            }, { displayModeBar: false, responsive: true });
+            return;
+        }
+
+        if (cfg.type === 'pie') {
+            const pieData = [{
+                labels,
+                values,
+                type: 'pie',
+                hole: 0.5,
+                marker: { colors: ['#4f46e5', '#818cf8', '#34d399', '#fbbf24', '#f87171', '#a78bfa'] },
+                textinfo: 'none'
+            }];
+            Plotly.react(cfg.chartElId, pieData, {
+                ...layoutConfig,
+                title: `${cfg.title} (${agg.toUpperCase()} of ${valueCol})`
+            }, { displayModeBar: false, responsive: true });
+        }
+    }
+
+    pdfBtn.addEventListener('click', () => {
+        const element = document.getElementById('printArea');
+        const projName = document.getElementById('repProjName').innerText;
+        pdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+        html2pdf().set({
+            margin: 0.2,
+            filename: `${projName}_Dashboard.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        }).from(element).save().then(() => {
+            pdfBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> Download PDF';
+        });
+    });
+
+    excelBtn.addEventListener('click', () => {
+        if (!currentDataset || currentDataset.length === 0) return;
+        const filtered = getFilteredDataset();
+        const ws = XLSX.utils.json_to_sheet(filtered);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Data");
+        XLSX.writeFile(wb, `${document.getElementById('repProjName').innerText}_Data.xlsx`);
+    });
+
+    window.addEventListener('resize', () => {
+        resizeAllPlots();
+        updateDashboard();
+    });
+</script>
+{% endblock %}
